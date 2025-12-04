@@ -59,7 +59,7 @@ class Template
         'cache_id'           => '', // 模板缓存ID
         'tpl_replace_string' => [],
         'tpl_var_identify'   => 'array', // .语法变量识别，array|object|'', 为空时自动识别
-        'default_filter'     => 'htmlentities', // 默认过滤方法 用于普通标签输出
+        'default_filter'     => 'htmlecho', // 默认过滤方法 用于普通标签输出
     ];
 
     /**
@@ -111,7 +111,7 @@ class Template
 
         // 初始化模板编译存储器
         $type  = $this->config['compile_type'] ? $this->config['compile_type'] : 'File';
-        $class = false !== strpos($type, '\\') ? $type : '\\iboxs\\template\\driver\\' . ucwords($type);
+        $class = str_contains($type, '\\') ? $type : '\\iboxs\\template\\driver\\' . ucwords($type);
 
         $this->storage = new $class();
     }
@@ -390,7 +390,7 @@ class Template
     {
         // 判断是否启用布局
         if ($this->config['layout_on']) {
-            if (false !== strpos($content, '{__NOLAYOUT__}')) {
+            if (str_contains($content, '{__NOLAYOUT__}')) {
                 // 可以单独定义不使用布局
                 $content = str_replace('{__NOLAYOUT__}', '', $content);
             } else {
@@ -515,7 +515,7 @@ class Template
         $content = preg_replace('/(<\?(?!php|=|$))/i', '<?php echo \'\\1\'; ?>' . "\n", $content);
 
         // PHP语法检查
-        if ($this->config['tpl_deny_php'] && false !== strpos($content, '<?php')) {
+        if ($this->config['tpl_deny_php'] && str_contains($content, '<?php')) {
             throw new Exception('not allow php tag');
         }
     }
@@ -571,7 +571,7 @@ class Template
 
                     foreach ($array as $k => $v) {
                         // 以$开头字符串转换成模板变量
-                        if (0 === strpos($v, '$')) {
+                        if (str_starts_with($v, '$')) {
                             $v = $this->get(substr($v, 1));
                         }
 
@@ -793,7 +793,7 @@ class Template
      */
     public function parseTagLib(string $tagLib, string &$content, bool $hide = false): void
     {
-        if (false !== strpos($tagLib, '\\')) {
+        if (str_contains($tagLib, '\\')) {
             // 支持指定标签库的命名空间
             $className = $tagLib;
             $tagLib    = substr($tagLib, strrpos($tagLib, '\\') + 1);
@@ -863,7 +863,7 @@ class Template
                             $this->parseVar($str);
                             $first = substr($str, 0, 1);
 
-                            if (strpos($name, ')')) {
+                            if (str_contains($name, ')')) {
                                 // $name为对象或是自动识别，或者含有函数
                                 if (isset($array[1])) {
                                     $this->parseVar($array[2]);
@@ -912,7 +912,7 @@ class Template
                                         $str = '<?php echo ' . ($express ?: '!empty(' . $name . ')') . ' ? ' . $this->parseVarFunction($name) . ' : ' . $str . '; ?>';
                                         break;
                                     default:
-                                        if (strpos($str, ':')) {
+                                        if (str_contains($str, ':')) {
                                             // {$varname ? 'a' : 'b'} $varname为真时输出a,否则输出b
                                             $array = explode(':', $str, 2);
 
@@ -989,7 +989,7 @@ class Template
                 if (isset($_varParseList[$match[0]])) {
                     $parseStr = $_varParseList[$match[0]];
                 } else {
-                    if (strpos($match[0], '.')) {
+                    if (str_contains($match[0], '.')) {
                         $vars  = explode('.', $match[0]);
                         $first = array_shift($vars);
 
@@ -1037,7 +1037,7 @@ class Template
      */
     public function parseVarFunction(string &$varStr, bool $autoescape = true): string
     {
-        if (!$autoescape && false === strpos($varStr, '|')) {
+        if (!$autoescape && false === str_contains($varStr, '|')) {
             return $varStr;
         } elseif ($autoescape && !preg_match('/\|(\s)?raw(\||\s)?/i', $varStr)) {
             $varStr .= '|' . $this->config['default_filter'];
@@ -1093,7 +1093,7 @@ class Template
                         $name = 'sprintf(' . $args[1] . ',' . $name . ')';
                         break;
                     case 'default': // 特殊模板函数
-                        if (false === strpos($name, '(')) {
+                        if (false === str_contains($name, '(')) {
                             $name = '(isset(' . $name . ') && (' . $name . ' !== \'\')?' . $name . ':' . $args[1] . ')';
                         } else {
                             $name = '(' . $name . ' ?: ' . $args[1] . ')';
@@ -1210,7 +1210,7 @@ class Template
                 continue;
             }
 
-            if (0 === strpos($templateName, '$')) {
+            if (str_starts_with($templateName, '$')) {
                 //支持加载变量文件名
                 $templateName = $this->get(substr($templateName, 1));
             }
@@ -1236,7 +1236,7 @@ class Template
     {
         if ('' == pathinfo($template, PATHINFO_EXTENSION)) {
 
-            if (0 !== strpos($template, '/')) {
+            if (false === str_starts_with($template, '/')) {
                 $template = str_replace(['/', ':'], $this->config['view_depr'], $template);
             } else {
                 $template = str_replace(['/', ':'], $this->config['view_depr'], substr($template, 1));

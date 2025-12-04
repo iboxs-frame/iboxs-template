@@ -292,7 +292,7 @@ class Cx extends Taglib
         if ('$' == $flag || ':' == $flag) {
             $value = $this->autoBuildVar($value);
             $value = 'case ' . $value . ':';
-        } elseif (strpos($value, '|')) {
+        } elseif (str_contains($value, '|')) {
             $values = explode('|', $value);
             $value  = '';
             foreach ($values as $val) {
